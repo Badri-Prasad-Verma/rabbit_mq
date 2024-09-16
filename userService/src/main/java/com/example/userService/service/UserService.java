@@ -1,6 +1,6 @@
 package com.example.userService.service;
 
-import com.example.userService.config.RabbitMQConfig;
+import com.example.userService.config.UserRabbitMQConfig;
 import com.example.userService.entity.User;
 import com.example.userService.repository.UserRepository;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -8,7 +8,9 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -33,11 +35,22 @@ public class UserService {
 
         saveUser(user);
 
-        // Publish event to RabbitMQ
-        rabbitTemplate.convertAndSend(RabbitMQConfig.USER_EXCHANGE, RabbitMQConfig.USER_ROUTING_KEY, user, message -> {
-            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-            return message;
-        });
+        // Create a JSON-compatible map with user data
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("id", user.getId());
+        userMessage.put("email", user.getEmail());
+        userMessage.put("name", user.getName());
+
+        // Send user data to RabbitMQ after saving to the database
+        rabbitTemplate.convertAndSend(
+                UserRabbitMQConfig.USER_EXCHANGE,
+                UserRabbitMQConfig.USER_ROUTING_KEY,
+                userMessage,
+                message -> {
+                    message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);  // Set persistent delivery
+                    return message;
+                }
+        );
         System.out.println("User creation event sent to RabbitMQ for user: " + user.getEmail());
     }
 

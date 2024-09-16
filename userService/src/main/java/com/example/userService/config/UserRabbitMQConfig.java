@@ -1,6 +1,7 @@
 package com.example.userService.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -10,16 +11,17 @@ import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainer
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 @Configuration
-public class RabbitMQConfig {
+//@EnableRabbit
+public class UserRabbitMQConfig {
 
     public static final String USER_CREATION_QUEUE = "user-creation-queue";
     public static final String USER_EXCHANGE = "user_exchange";
     public static final String USER_ROUTING_KEY = "user_routing_key";
 
-    private String replyText = "Message returned";
-    private String replyCode = "Reply Code";
-    private String exchange = "Exchange";
-    private String routingKey = "Routing Key";
+//    private String replyText = "Message returned";
+//    private String replyCode = "Reply Code";
+//    private String exchange = "Exchange";
+//    private String routingKey = "Routing Key";
 
     @Bean
     public DirectExchange userExchange() {
@@ -28,7 +30,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue userQueue() {
-        return new Queue(USER_CREATION_QUEUE,true);
+        return new Queue(UserRabbitMQConfig.USER_CREATION_QUEUE,true);
     }
 
     @Bean
