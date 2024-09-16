@@ -1,34 +1,56 @@
 package com.rabbit.service;
 
-import com.rabbit.config.RabbitMQConfig;
-import com.rabbit.entity.User;
-import com.rabbitmq.client.Channel;
-import org.springframework.amqp.core.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
+import java.util.Map;
 
 @Service
 public class EmailListenerService {
 
     @Autowired
-    private EmailService emailService;
+    private JavaMailSender mailSender;
 
-    @RabbitListener(queues = RabbitMQConfig.USER_CREATION_QUEUE, ackMode = "MANUAL")
-    public void receiveUserCreationMessage(User user, Channel channel, Message message) throws IOException {
+    @RabbitListener(queues = "user-creation-queue")
+    public void sendEmail(Map<String, Object> emailData) {
+        String email = (String) emailData.get("email");
+        String subject = (String) emailData.get("subject");
+        String messageText = (String) emailData.get("message");
+        String csvData = (String) emailData.get("csvData"); // CSV data passed as string
+        String fileName = (String) emailData.get("fileName");
+
+        MimeMessage message = mailSender.createMimeMessage();
+
         try {
-            // Process the message (e.g., send email)
-            emailService.sendEmail(user.getEmail(), "Welcome " + user.getName(),
-                    "Thank you for registering, " + user.getName() + "!");
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(email);
+            helper.setSubject(subject);
+            helper.setText(messageText);
 
-            // Acknowledge message after successful processing
-            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-        } catch (Exception e) {
-            // Log error and optionally reject or requeue the message
-            System.err.println("Error processing message: " + e.getMessage());
-            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+            // Attach CSV file
+            if (csvData != null) {
+                if (fileName == null || fileName.isEmpty()) {
+                    fileName = "default.csv";  // Assign a default filename if it's null or empty
+                }
+
+                InputStreamSource attachment = new ByteArrayResource(csvData.getBytes());
+                helper.addAttachment(fileName, attachment);
+            }
+
+            mailSender.send(message);
+            System.out.println("Email sent successfully to " + email);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        } catch (Exception ex) {
+            System.out.println("Error occurred while sending email: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }

@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableRabbit
-public class RabbitMQConfig {
+//@EnableRabbit
+public class EmailRabbitMQConfig {
 
     public static final String USER_CREATION_QUEUE = "user-creation-queue";
 
